@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murad's Pro Chat v3</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0b141a; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #202c33; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; }
+        #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
+        
+        .msg { padding: 8px 12px; border-radius: 10px; max-width: 75%; word-wrap: break-word; font-size: 15px; position: relative; cursor: pointer; display: flex; flex-direction: column; }
+        .my-msg { background: #005c4b; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .other-msg { background: #202c33; align-self: flex-start; border-bottom-left-radius: 2px; }
+        
+        .sender-name { font-size: 11px; font-weight: bold; margin-bottom: 3px; color: #00d4ff; }
+        
+        /* সময়ের ডিজাইন */
+        .time { font-size: 10px; color: rgba(255,255,255,0.6); align-self: flex-end; margin-top: 4px; }
+        
+        .footer { padding: 10px; display: flex; background: #202c33; gap: 8px; }
+        input { flex: 1; padding: 12px; border: none; border-radius: 25px; background: #2a3942; color: white; outline: none; }
+        button { background: #00a884; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+    </style>
+</head>
+<body>
+
+<header>Murad's Chat Room 💬</header>
+<div id="chat-box"></div>
+
+<div class="footer">
+    <input type="text" id="msgInput" placeholder="মেসেজ লিখুন...">
+    <button onclick="sendMessage()">➤</button>
+</div>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2eTZic-v3f0B38deNKaOwklNvZjLmzCU",
+      authDomain: "murad-s.firebaseapp.com",
+      projectId: "murad-s",
+      storageBucket: "murad-s.firebasestorage.app",
+      messagingSenderId: "227761216470",
+      appId: "1:227761216470:web:8435f6e7b8f554d3dda277",
+      measurementId: "G-795G52REQ1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let userName = prompt("আপনার নাম লিখুন:");
+    if (!userName) userName = "Guest_" + Math.floor(Math.random() * 1000);
+
+    function sendMessage() {
+        let text = document.getElementById('msgInput').value;
+        if(text.trim() !== "") {
+            database.ref("messages").push().set({
+                name: userName,
+                text: text,
+                timestamp: Date.now() // এখানে সময় সেভ হচ্ছে
+            });
+            document.getElementById('msgInput').value = "";
+        }
+    }
+
+    function deleteMessage(key) {
+        if(confirm("মেসেজটি কি Unsend করতে চান?")) {
+            database.ref("messages/" + key).remove();
+        }
+    }
+
+    // সময় ফরম্যাট করার ফাংশন
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    database.ref("messages").on("value", (snapshot) => {
+        let box = document.getElementById('chat-box');
+        box.innerHTML = ""; 
+        snapshot.forEach((childSnapshot) => {
+            let data = childSnapshot.val();
+            let key = childSnapshot.key;
+            let div = document.createElement('div');
+            
+            // সময়ের টেক্সট তৈরি
+            let timeStr = formatTime(data.timestamp);
+
+            if (data.name === userName) {
+                div.className = 'msg my-msg';
+                div.innerHTML = `${data.text} <span class="time">${timeStr}</span>`;
+                div.onclick = () => deleteMessage(key);
+            } else {
+                div.className = 'msg other-msg';
+                div.innerHTML = `<span class="sender-name">${data.name}</span>${data.text} <span class="time">${timeStr}</span>`;
+            }
+            box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
+    });
+</script>
+</body>
+</html>
